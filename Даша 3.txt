@@ -1,0 +1,454 @@
+#include<iostream> 
+#include <fstream> 
+
+using namespace std;
+
+
+class strclass {
+	char *str;
+	int length;
+
+public:
+	
+	//конструктор по умолчанию 	
+	strclass() {
+		this->str = new char[1];
+		this->length = 0;
+		str[0] = '\0';
+		cout << "Сработал конструктор по умолчанию" << endl;
+
+	}
+	//конструктор с параметром char 
+	strclass(char c) {
+		this->length = 1;
+		this->str = new char[2];
+		this->str[0] = c;
+		this->str[1] = '\0';
+		cout << "Сработал конструктор с параметром char" << endl;
+	}
+
+
+	//конструктор с параметром char* 
+	strclass(char *str) {
+		int i;
+		this->length = strlen(str);
+		this->str = new char[length + 1];
+		for (i = 0; i <= length; i++) {
+			this->str[i] = str[i];
+		}
+
+		cout << "Сработал конструктор с параметром char*" << endl;
+	}
+
+	// конструктор копирования 
+	strclass(const strclass &other) {
+		int i;
+		this->length = other.length;
+		this->str = new char[length + 1];
+
+		for (i = 0; i <= length; i++) {
+			this->str[i] = other.str[i];
+
+		}
+
+
+		cout << "сработал конструктор копирования" << endl;
+	}
+
+	//деструктор 
+	~strclass() {
+		cout << "cработал деструктор" << endl;
+		delete[] this->str;
+	}
+
+
+	//оператор приведения к const char * 
+	operator const char * () const {
+		cout << "сработал оператор переопределения типа" << endl;
+		return(const char *)str;
+	}
+
+	//оператор присваивания 
+	strclass & operator = (const strclass &other) {
+		if (this->str != other.str) {
+
+			this->length = other.length;
+			this->str = new char[length + 1];
+
+			for (int i = 0; i < length; i++) {
+				this->str[i] = other.str[i];
+			}
+
+			this->str[length] = '\0';
+			cout << "Сработал оператор присваивания" << endl;
+			return *this;
+		}
+	}
+
+	//оператор +
+	strclass  operator+(const strclass &b)const {
+		strclass result;
+		int l1 = b.length;
+		int l2 = length;
+		result.length = l1 + l2;
+		result.str = new char[l1 + l2 + 1];
+		for (int i = 0; i < l2; i++) {
+			result.str[i] = this->str[i];
+		}
+		for (int i = 0; i < l1; i++) {
+			result.str[l2 + i] = b.str[i];
+		}
+		result.str[l1 + l2] = '\0';
+		cout << "Сработал оператор +" << endl;
+		return result;
+	}
+
+
+	//оператор +=
+	strclass  operator+=(const strclass &b) {
+		int length1 = this->length;
+		char *str1 = new char[this->length];
+		for (int i = 0; i < this->length; i++) {
+			str1[i] = this->str[i];
+		}
+		delete this->str;
+		this->length = this->length + b.length;
+		this->str = new char[this->length + 1];
+
+		for (int i = 0; i < this->length - b.length; i++) {
+			this->str[i] = str1[i];
+		}
+
+
+		for (int i = 0; i < b.length; i++) {
+			this->str[i + length1] = b.str[i];
+		}
+		this->str[this->length] = '\0';
+		delete str1;
+		cout << "Сработал оператор +=" << endl;
+		return *this;
+	}
+	//оператор () взятия подстроки
+	strclass  operator()(int begin,int end)const{
+		strclass result;
+		if(end+1>this->length||begin<0){
+			throw "неккоректный запрос!";
+				}
+		else {
+
+			result.length = end - begin+1;
+			result.str = new char[result.length+1];
+
+
+			for (int i = 0; i < result.length; i++) {
+				result.str[i] = this->str[i + begin];
+			}
+			result.str[result.length] = '\0';
+		}
+		cout << "Сработал оператор ()" << endl;
+		return result;
+	}
+
+	//оператор * повторения строки
+	strclass  operator*(int k)const {
+		strclass result;
+
+			result.length = this->length*k;
+			result.str = new char[length*k+1];
+
+			for (int j = 0; j <k ; j++) {
+			for (int i = 0; i < length; i++) {
+				result.str[j*length+i] = this->str[i];
+			}
+		}
+			result.str[length*k] = '\0';
+
+		cout << "Сработал оператор *" << endl;
+		return result;
+	}
+	
+	// оператор[] const
+		char operator[](const int i) const {
+		if (i < 0 || i >= this->length)throw "неккоретный запрос";
+		cout << "Сработал оператор []const" << endl;
+		return this->str[i];
+	}
+	//оператор[]
+	char & operator[](const int i) {
+		if (i < 0 || i >= this->length)throw "неккоретный запрос";
+		cout << "Сработал оператор []" << endl;
+		return this->str[i];
+	}
+	//Префикс функция
+	int* prefixFunction() {
+		int *p = new int[this->length];
+		int k;
+		p[0] = 0;
+		for (int i = 1; i <= this->length - 1;i++)
+		{
+			k = p[i - 1];
+			while (k > 0 && this->str[i] != this->str[k]) {
+				k = p[k - 1];
+			}
+			if (this->str[i] == this->str[k])k++;
+			p[i] = k;
+
+		}
+		
+		return p;
+	}
+	//оператор -
+	strclass  operator-(const strclass &b)const {
+		
+		int l1 = b.length;
+		int l2 = length;
+		char *p = new char[l1 + l2 + 1];
+		p[l1] = '&';
+		for (int i = 0; i < l1 + l2 + 1; i++) {
+			if (i < l1)p[i] = b.str[i];
+			else p[i + 1] = str[i - l1];
+		}
+		strclass dop(p);
+		int *h = new int[l1 + l2 + 1];
+		h = dop.prefixFunction();
+		
+
+		int c=0;//cчетчик количества подхождений
+		for (int i = 0; i < l1 + l2 + 1; i++) {
+			if (h[i] == b.length) {
+				
+				if(i>=b.length-1 &&h[i - b.length + 1] != -1)c++;
+				for (int j = 0; j < b.length; j++)
+				{
+					if(h[i-b.length+1]!=-1) h[i - j] = -1;
+				}
+
+			}
+		}
+
+		
+		strclass result;
+		int k=0;
+		
+		result.length = length - c * b.length+1;
+		result.str = new char[result.length];
+		for (int i = 0; i < result.length; i++) {
+			
+			if (h[k+b.length+1] != -1) {
+				result.str[i] = p[k+b.length+1]; k++;
+			}
+			else {
+				k = k + b.length;
+				result.str[i] = p[k+b.length+1];
+				k++;
+			}
+
+			
+		}
+		result.str[result.length - 1] = '\0';
+		cout << "Сработал оператор -" << endl;
+		return result;
+	}
+
+
+	//метод replace
+	strclass  replace( strclass &a, strclass &b,strclass &s) {
+
+
+		int l1 = b.length;
+		int l2 = a.length;
+		int l3 = s.length;
+		char *p = new char[l1 + l2 + 1];
+		p[l1] = '&';
+		for (int i = 0; i < l1 + l2 + 1; i++) {
+			if (i < l1)p[i] = b.str[i];
+			else p[i + 1] = a.str[i - l1];
+		}
+		strclass dop(p);
+		int *h = new int[l1 + l2 + 1];
+		h = dop.prefixFunction();
+
+		
+		
+		int c = 0;//cчетчик количества подхождений
+		for (int i = 0; i < l1 + l2 + 1; i++) {
+			if (h[i] == b.length) {
+
+				if (i >= b.length - 1 && h[i - b.length + 1] != -1)c++;
+				for (int j = 0; j < b.length; j++)
+				{
+					if (h[i - b.length + 1] != -1) h[i - j] = -1;
+				}
+
+			}
+		}
+		
+		
+		int k = 0;
+
+		this->length = l2-c*l1+c*l3 + 1;
+		this->str = new char[this->length];
+		for (int i = 0; i < this->length-1; i++) {
+
+			if (h[k + b.length + 1] != -1) {
+				this->str[i] = p[k + b.length + 1];
+				k++;
+			}
+			else {
+				
+				//переписываем слово
+				for (int j = 0; j < s.length; j++)
+				{
+					this->str[i] = s.str[j];
+					i++;
+				}
+				i--;
+				k = k + b.length;
+				
+			}
+
+
+		}
+
+
+
+		this->str[this->length - 1] = '\0';
+		cout << "Сработал метод replace" << endl;
+		 return *this;;
+	}
+
+	
+};
+//получение длины строки за O(1)
+int get_str() {
+
+	int length = 0;
+	int capacity = 1;
+	char* s = new char[0];
+	char c;
+	c = getchar();
+
+	while (c != '\n') {
+		s[length++] = c;
+		if (length >= capacity) {
+			capacity *= 2;
+			s = (char*)realloc(s, capacity * sizeof(char));
+		}
+		c = getchar();
+
+	}
+	s[length] = '\0';
+
+	return length;
+
+}
+
+
+
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+	
+		char a[] = "Hello";
+			char b[] = "world";
+//Вызовы всех конструкторов,операторов,методов
+	//конструктор по умолчанию 
+	strclass pustoi;
+	cout<< pustoi << endl;
+
+	//конструктор с параметром char
+	char n='f';
+	strclass d(n);
+	cout << d << endl;
+
+	//конструктор с параметром char* 
+	strclass dfhf(a);
+	cout << dfhf << endl;
+
+	//оператор дублирования
+	char zzz[] = "Hello! ";
+	strclass zzzz(zzz);
+	strclass zzzzz = zzzz * 3;
+	cout << zzzzz << endl;
+
+
+	//оператор взятия подстроки
+	char ccc[] = "Hello world!";
+	strclass xxxx(ccc);
+	strclass xxxxx = xxxx(6, 11);
+	cout << xxxxx << endl;
+
+	//конструктор копирования 
+	strclass c(b);
+	cout << c << endl;
+	strclass copy = c;
+	cout << copy << endl;
+	//оператор присваиваивания 
+	copy = dfhf;
+	cout << copy << endl;
+
+
+	strclass c1(a), c2(b);
+	//оператор +
+	strclass xxx = c1 + c2;
+	cout << xxx << endl;
+
+	//оператов +=
+	c1 += c2;
+	cout << c1 << endl;
+
+
+	const strclass c3(a);
+	//оператор const[]
+	cout << c3[4] << endl;
+	//оператор []
+	cout << c1[5] << endl;
+	c1[4] = 'a';
+	cout << c1 << endl;
+
+	// оператор -
+	char aaaaaaa[] = "ababcabcacab";
+	char bbbbbbb[] = "abca";
+	strclass s1(aaaaaaa);
+	strclass s2(bbbbbbb);
+	strclass s3 = s1 - s2;
+	cout << s3<<endl;
+
+	//получение длины строки,введеной с клавиатуры за O(1)
+	int i = get_str();
+	cout <<"Длина введенной строки =" <<i;
+
+
+	cout << endl << endl << endl;
+
+
+
+	//основная проверка
+	ifstream file;
+	ofstream file2;
+	file.open("1.txt");
+	file2.open("2.txt");
+	
+	
+
+	if (file.is_open()) {
+		
+		char*l = new char[100];
+		file.getline(l, '/0');
+		
+		strclass bbb(l);
+		file.getline(l, '/0');
+		strclass bbbb(l);
+		file.getline(l, '/0');
+		strclass bbbbb(l);
+		strclass ccccc;
+		ccccc.replace(bbb, bbbb, bbbbb);
+		if (file2.is_open()) {
+			file2 << ccccc << endl;
+
+		}
+	}
+	file.close();
+	file2.close();
+	
+}

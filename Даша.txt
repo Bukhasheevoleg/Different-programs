@@ -1,0 +1,417 @@
+#include<iostream> 
+#include<list> 
+#include <string> 
+#include <iterator> 
+#include <fstream> 
+#include<math.h>
+
+using namespace std;
+
+ifstream file;
+ofstream file2;
+double convert(string s) {
+	int result=0;
+	for (int i = 0; i < s.length(); i++) {
+		result = result * 10 + s[i] - 48;
+	}
+	
+	return result;
+}
+class Expression {
+public:
+	virtual Expression *diff(string x) = 0;
+	virtual void print() = 0;
+	virtual double evaluate(double t1) = 0;
+
+};
+
+class Number :public Expression {
+	double n;
+public:
+	Number(double n1) :n(n1) {}
+	Expression *diff(string x) {
+		return new Number(0);
+	}
+	void print() {
+		file2 << n;
+	}
+	double evaluate(double t) {
+		return n;
+	}
+
+};
+
+class Variable :public Expression {
+	string s;
+public:
+	Variable(string x1) :s(x1) {}
+	Expression *diff(string x) {
+		if(s==x)return new Number(1);
+		else return new Number(0);
+	}
+	void print() {
+		file2 << s;
+	}
+	double evaluate(double t) {
+		return t;
+	}
+};
+
+
+class Add :public Expression
+{
+	Expression*m1, *m2;
+public:
+	Add(Expression*L1, Expression*L2) : m1(L1), m2(L2) {}
+	Expression*diff(string x)
+	{
+		return new Add(m1->diff( x), m2->diff( x));
+
+	};
+
+	void print() {
+
+		file2 << "(";
+		m1->print();
+		file2 << "+";
+		m2->print();
+		file2 << ")";
+	}
+	double evaluate(double t) {
+		return m1->evaluate(t) + m2->evaluate(t);
+	}
+};
+class Sub :public Expression
+{
+	Expression*m1, *m2;
+public:
+	Sub(Expression*L1, Expression*L2) : m1(L1), m2(L2) {}
+	Expression*diff(string x)
+	{
+		return new Sub(m1->diff(x), m2->diff(x));
+
+	};
+
+	void print() {
+
+		file2 << "(";
+		m1->print();
+		file2 << "-";
+		m2->print();
+		file2 << ")";
+	}
+	double evaluate(double t) {
+		return m1->evaluate(t) - m2->evaluate(t);
+	}
+};
+
+class Mul :public Expression
+{
+	Expression*m1, *m2;
+public:
+	Mul(Expression*L1, Expression*L2) : m1(L1), m2(L2) {}
+
+	Expression*diff(string x)
+	{
+
+		return new Add(new Mul(m1->diff(x), m2), new Mul(m1, m2->diff(x)));
+	};
+
+	void print() {
+		file2 << "(";
+		m1->print();
+		file2 << "*";
+		m2->print();
+		file2 << ")";
+	}
+	double evaluate(double t) {
+		return m1->evaluate(t) *m2->evaluate(t);
+	}
+};
+class Div :public Expression
+{
+	Expression*m1, *m2;
+public:
+	Div(Expression*L1, Expression*L2) : m1(L1), m2(L2) {}
+
+	Expression*diff(string x)
+	{
+		return new Div(new Sub(new Mul(m1->diff(x), m2), new Mul(m1, m2->diff(x))), new Mul(m2, m2));
+
+	};
+	void print() {
+
+		m1->print();
+		file2 << "/";
+		m2->print();
+	}
+	double evaluate(double t) {
+		return m1->evaluate(t) / m2->evaluate(t);
+	}
+
+};
+
+Expression* req(list<string>st) {
+	Expression *e;
+	double n;
+	
+	int k = 0, i = 1, j;//k-число или символ,i-длина подсписка,j-количество левых скобок в подсписке
+	int l;
+	auto iter = st.begin();
+
+
+	string str = *iter;
+	string s="";
+	if (str[0] == '(') { iter++; str = *iter; }
+	
+
+	//база рекурсии
+	if (st.size() == 1) {
+		
+		if (str.length() > 1) {
+			if (str[0] >= 'a'&&str[0] <= 'z') {
+				l = 0;
+				while (str[l] >= 'a' && str[l] <= 'z')
+				{
+					s += str[l];
+					l++;
+					
+				}
+				return new Variable(s);
+			}
+			else
+			return new Number(convert(str));
+		}
+		else {
+			if (str[0] >= 'a'&&str[0] <= 'z') {
+				l = 0;
+				while (str[l] >= 'a' && str[l] <= 'z')
+				{
+					s += str[l];
+					l++;
+				}
+				return new Variable(s);
+			}
+			else
+				return new Number(str[0] - 48);
+		}
+	}
+
+
+	//подсписок вида : ((...
+	if (str[0] == '(') {
+		j = 1;
+		do {
+			iter++;
+			str = *iter;
+			i++;//длина подсписка
+			if (str[0] == '(')j++;
+			if (str[0] == ')')j--;
+		} while (j != 0);
+
+
+
+		iter++;
+		str = *iter;
+		st.pop_front();
+		st.pop_back();
+		list<string> st1(st), st2(st);
+
+		switch (str[0]) {
+		case '+':
+			st1.resize(i);
+			for (int j = 0; j <= i; j++)st2.pop_front();
+			e = new Add(req(st1), req(st2)); return e; break;
+		case '-':
+			st1.resize(i);
+			for (int j = 0; j <= i; j++)st2.pop_front();
+			e = new Sub(req(st1), req(st2)); return e; break;
+		case '*':
+			st1.resize(i);
+			for (int j = 0; j <= i; j++)st2.pop_front();
+			e = new Mul(req(st1), req(st2)); return e; break;
+		case '/':
+			st1.resize(i);
+			for (int j = 0; j <= i; j++)st2.pop_front();
+			e = new Div(req(st1), req(st2)); return e; break;
+		}
+	}
+
+
+
+	else
+	{
+
+		if (str[0] >= 'a'&&str[0] <= 'z')
+		{
+			l = 0;
+			while (str[l] >= 'a' && str[l] <= 'z')
+			{
+				s += str[l];
+				l++;
+			}
+		}
+		else {
+			if (str.length() == 1) {
+				if (str[0] >= '0'&&str[0] <= '9') { n = double(str[0]) - 48; k++; }
+			}
+			else {
+				n = convert(str);
+				k++;
+
+			}
+		}
+
+		iter++;
+		str = *iter;
+
+		st.pop_front();
+		st.pop_front();
+		st.pop_back();
+		switch (str[0]) {
+		case '+':
+			if (k == 1) { st.pop_front(); e = new Add(new Number(n), req(st)); return e; }
+			else
+				if (k == 0) { st.pop_front(); e = new Add(new Variable(s), req(st)); return e; }
+			break;
+		case '-':
+			if (k == 1) { st.pop_front(); e = new Sub(new Number(n), req(st)); return e; }
+
+			else
+				if (k == 0) {
+					st.pop_front(); e = new Sub(new Variable(s), req(st)); return e;
+				} break;
+		case '*':if (k == 1) { st.pop_front(); e = new Mul(new Number(n), req(st)); return e; }
+				 else
+			if (k == 0) { st.pop_front(); e = new Mul(new Variable(s), req(st)); return e; } break;
+		case '/':if (k == 1) { st.pop_front(); e = new Div(new Number(n), req(st)); return e; }
+				 else
+			if (k == 0) {
+				st.pop_front(); e = new
+
+					Div(new Variable(s), req(st)); return e;
+			} break;
+		}
+	}
+
+
+}
+
+
+
+Expression* read_expression(string s) {
+
+	list<string> st;
+	int i;
+
+
+	for (i = 0; i < s.length(); i++) {
+		int j = 0;
+		char* f = new char[s.length()];
+
+
+		if (/*(s[i] >= 'a' && s[i] <= 'z') ||*/ s[i] == '+' || s[i] == '*' || s[i] == '/' || (s[i] == '-' && s[i - 1] != '(') || s[i] == '(' || s[i] == ')') {
+			f[0] = s[i];
+			string str(f);
+			str.erase(1, str.length());
+			st.push_back(str);
+
+		}
+		else {
+			if (s[i] == '-' && s[i - 1]) {
+
+				f[0] = '(';
+				string str(f);
+				str.erase(1, str.length());
+				st.push_back(str);
+
+				f[0] = '0';
+				str = f;
+				str.erase(1, str.length());
+				st.push_back(str);
+				f[0] = '-';
+				str = f;;
+				str.erase(1, str.length());
+				st.push_back(str);
+				i++;
+				if (s[i] >= 'a' && s[i] <= 'z') {
+					f[0] = s[i];
+					str = f;
+					str.erase(1, str.length());
+					st.push_back(str);
+
+				}
+				else {
+					while ((s[i] >= '0' && s[i] <= '9') || s[i] == '.') {
+						f[j] = s[i];
+						j++;
+						i++;
+					}
+					i--;
+					str = f;
+					str.erase(j, str.length() - j);
+					st.push_back(str);
+
+
+
+				}
+				f[0] = ')';
+				str = f;
+				str.erase(1, str.length());
+				st.push_back(str);
+			}
+			else {
+				while ((s[i] >= '0' && s[i] <= '9') || s[i] == '.'|| (s[i] >= 'a' && s[i] <= 'z')) {
+					f[j] = s[i];
+					j++;
+					i++;
+				}
+				i--;
+				string str(f);
+				str.erase(j, str.length() - j);
+				st.push_back(str);
+
+				
+			}
+			
+
+        }
+		
+
+
+
+
+	}
+
+	return req(st);
+}
+
+
+	int main() {
+
+		
+		file.open("input.txt");
+		file2.open("output.txt");
+
+		if (file.is_open()) {
+			string s;
+
+			getline(file, s);
+			Expression *e = read_expression(s);
+			Expression *de = e->diff("x");
+			if (file2.is_open()) {
+				de->print();
+			}
+
+
+
+			file.close();
+			file2.close();
+			/*Expression *e = read_expression(s);*/
+			/*Expression *e;
+			e = new Mul(new Div(new Number(5), new Variable('x')), new Variable('x'));*/
+
+
+		}
+		return 0;
+	}
